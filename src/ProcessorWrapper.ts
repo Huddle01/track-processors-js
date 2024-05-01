@@ -1,13 +1,13 @@
-import type { ProcessorOptions, Track, TrackProcessor } from 'livekit-client';
-import { TrackTransformer } from './transformers';
+import type { ProcessorOptions, Track, TrackProcessor } from "livekit-client";
+import type { TrackTransformer } from "./transformers";
 
-export default class ProcessorWrapper<TransformerOptions extends Record<string, unknown>>
-  implements TrackProcessor<Track.Kind>
-{
+export default class ProcessorWrapper<
+  TransformerOptions extends Record<string, unknown>,
+> implements TrackProcessor<Track.Kind> {
   static get isSupported() {
     return (
-      typeof MediaStreamTrackGenerator !== 'undefined' &&
-      typeof MediaStreamTrackProcessor !== 'undefined'
+      typeof MediaStreamTrackGenerator !== "undefined" &&
+      typeof MediaStreamTrackProcessor !== "undefined"
     );
   }
 
@@ -44,7 +44,7 @@ export default class ProcessorWrapper<TransformerOptions extends Record<string, 
       // this leads to a shift of the underlying video as the frame itself is being rendered with the coded size
       // but image segmentation is based on the display dimensions (-> the cropped version)
       // in order to prevent this, we force the resize mode to "none"
-      resizeMode: 'none',
+      resizeMode: "none",
     });
     this.sourceSettings = this.source.getSettings();
     this.sourceDummy = opts.element;
@@ -53,13 +53,13 @@ export default class ProcessorWrapper<TransformerOptions extends Record<string, 
       this.sourceDummy.width = this.sourceSettings.width ?? 300;
     }
     if (!(this.sourceDummy instanceof HTMLVideoElement)) {
-      throw TypeError('Currently only video transformers are supported');
+      throw TypeError("Currently only video transformers are supported");
     }
     // TODO explore if we can do all the processing work in a webworker
     this.processor = new MediaStreamTrackProcessor({ track: this.source });
 
     this.trackGenerator = new MediaStreamTrackGenerator({
-      kind: 'video',
+      kind: "video",
       signalTarget: this.source,
     });
 
@@ -72,7 +72,9 @@ export default class ProcessorWrapper<TransformerOptions extends Record<string, 
   async init(opts: ProcessorOptions<Track.Kind>) {
     await this.setup(opts);
     if (!this.canvas || !this.processor || !this.trackGenerator) {
-      throw new TypeError('Expected both canvas and processor to be defined after setup');
+      throw new TypeError(
+        "Expected both canvas and processor to be defined after setup",
+      );
     }
 
     let readableStream = this.processor.readable;
@@ -85,7 +87,7 @@ export default class ProcessorWrapper<TransformerOptions extends Record<string, 
 
     readableStream
       .pipeTo(this.trackGenerator.writable)
-      .catch((e) => console.error('error when trying to pipe', e))
+      .catch((e) => console.error("error when trying to pipe", e))
       .finally(() => this.destroy());
     this.processedTrack = this.trackGenerator as MediaStreamVideoTrack;
   }
@@ -95,12 +97,16 @@ export default class ProcessorWrapper<TransformerOptions extends Record<string, 
     return this.init(opts);
   }
 
-  async restartTransformer(...options: Parameters<(typeof this.transformer)['restart']>) {
+  async restartTransformer(
+    ...options: Parameters<(typeof this.transformer)["restart"]>
+  ) {
     // @ts-ignore unclear why the restart method only accepts VideoTransformerInitOptions instead of either those or AudioTransformerInitOptions
     this.transformer.restart(options[0]);
   }
 
-  async updateTransformerOptions(...options: Parameters<(typeof this.transformer)['update']>) {
+  async updateTransformerOptions(
+    ...options: Parameters<(typeof this.transformer)["update"]>
+  ) {
     this.transformer.update(options[0]);
   }
 

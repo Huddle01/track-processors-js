@@ -1,9 +1,11 @@
-import * as vision from '@mediapipe/tasks-vision';
-import { dependencies } from '../../package.json';
-import VideoTransformer from './VideoTransformer';
-import { VideoTransformerInitOptions } from './types';
+import * as vision from "@mediapipe/tasks-vision";
+import { dependencies } from "../../package.json";
+import VideoTransformer from "./VideoTransformer";
+import type { VideoTransformerInitOptions } from "./types";
 
-export type SegmenterOptions = Partial<vision.ImageSegmenterOptions['baseOptions']>;
+export type SegmenterOptions = Partial<
+  vision.ImageSegmenterOptions["baseOptions"]
+>;
 
 export type BackgroundOptions = {
   blurRadius?: number;
@@ -16,7 +18,7 @@ export type BackgroundOptions = {
 
 export default class BackgroundProcessor extends VideoTransformer<BackgroundOptions> {
   static get isSupported() {
-    return typeof OffscreenCanvas !== 'undefined';
+    return typeof OffscreenCanvas !== "undefined";
   }
 
   imageSegmenter?: vision.ImageSegmenter;
@@ -35,26 +37,32 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
     this.update(opts);
   }
 
-  async init({ outputCanvas, inputElement: inputVideo }: VideoTransformerInitOptions) {
+  async init({
+    outputCanvas,
+    inputElement: inputVideo,
+  }: VideoTransformerInitOptions) {
     await super.init({ outputCanvas, inputElement: inputVideo });
 
     const fileSet = await vision.FilesetResolver.forVisionTasks(
       this.options.assetPaths?.tasksVisionFileSet ??
-        `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${dependencies['@mediapipe/tasks-vision']}/wasm`,
+      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${dependencies["@mediapipe/tasks-vision"]}/wasm`,
     );
 
-    this.imageSegmenter = await vision.ImageSegmenter.createFromOptions(fileSet, {
-      baseOptions: {
-        modelAssetPath:
-          this.options.assetPaths?.modelAssetPath ??
-          'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite',
-        delegate: 'GPU',
-        ...this.options.segmenterOptions,
+    this.imageSegmenter = await vision.ImageSegmenter.createFromOptions(
+      fileSet,
+      {
+        baseOptions: {
+          modelAssetPath:
+            this.options.assetPaths?.modelAssetPath ??
+            "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
+          delegate: "GPU",
+          ...this.options.segmenterOptions,
+        },
+        runningMode: "VIDEO",
+        outputCategoryMask: true,
+        outputConfidenceMasks: false,
       },
-      runningMode: 'VIDEO',
-      outputCategoryMask: true,
-      outputConfidenceMasks: false,
-    });
+    );
 
     // this.loadBackground(opts.backgroundUrl).catch((e) => console.error(e));
   }
@@ -69,7 +77,7 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
     const img = new Image();
 
     await new Promise((resolve, reject) => {
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = "Anonymous";
       img.onload = () => resolve(img);
       img.onerror = (err) => reject(err);
       img.src = path;
@@ -78,16 +86,19 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
     this.backgroundImage = imageData;
   }
 
-  async transform(frame: VideoFrame, controller: TransformStreamDefaultController<VideoFrame>) {
+  async transform(
+    frame: VideoFrame,
+    controller: TransformStreamDefaultController<VideoFrame>,
+  ) {
     try {
       if (this.isDisabled) {
         controller.enqueue(frame);
         return;
       }
       if (!this.canvas) {
-        throw TypeError('Canvas needs to be initialized first');
+        throw TypeError("Canvas needs to be initialized first");
       }
-      let startTimeMs = performance.now();
+      const startTimeMs = performance.now();
       this.imageSegmenter?.segmentForVideo(
         this.inputVideo!,
         startTimeMs,
@@ -118,20 +129,26 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
   }
 
   async drawVirtualBackground(frame: VideoFrame) {
-    if (!this.canvas || !this.ctx || !this.segmentationResults || !this.inputVideo) return;
+    if (
+      !this.canvas ||
+      !this.ctx ||
+      !this.segmentationResults ||
+      !this.inputVideo
+    )
+      return;
     // this.ctx.save();
     // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.segmentationResults?.categoryMask) {
-      this.ctx.filter = 'blur(10px)';
-      this.ctx.globalCompositeOperation = 'copy';
+      this.ctx.filter = "blur(10px)";
+      this.ctx.globalCompositeOperation = "copy";
       const bitmap = await maskToBitmap(
         this.segmentationResults.categoryMask,
         this.segmentationResults.categoryMask.width,
         this.segmentationResults.categoryMask.height,
       );
       this.ctx.drawImage(bitmap, 0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.filter = 'none';
-      this.ctx.globalCompositeOperation = 'source-in';
+      this.ctx.filter = "none";
+      this.ctx.globalCompositeOperation = "source-in";
       if (this.backgroundImage) {
         this.ctx.drawImage(
           this.backgroundImage,
@@ -145,11 +162,11 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
           this.canvas.height,
         );
       } else {
-        this.ctx.fillStyle = '#00FF00';
+        this.ctx.fillStyle = "#00FF00";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       }
 
-      this.ctx.globalCompositeOperation = 'destination-over';
+      this.ctx.globalCompositeOperation = "destination-over";
     }
     this.ctx.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
     // this.ctx.restore();
@@ -166,7 +183,7 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
     }
 
     this.ctx.save();
-    this.ctx.globalCompositeOperation = 'copy';
+    this.ctx.globalCompositeOperation = "copy";
 
     const bitmap = await maskToBitmap(
       this.segmentationResults.categoryMask,
@@ -174,13 +191,13 @@ export default class BackgroundProcessor extends VideoTransformer<BackgroundOpti
       this.segmentationResults.categoryMask.height,
     );
 
-    this.ctx.filter = 'blur(3px)';
-    this.ctx.globalCompositeOperation = 'copy';
+    this.ctx.filter = "blur(3px)";
+    this.ctx.globalCompositeOperation = "copy";
     this.ctx.drawImage(bitmap, 0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.filter = 'none';
-    this.ctx.globalCompositeOperation = 'source-out';
+    this.ctx.filter = "none";
+    this.ctx.globalCompositeOperation = "source-out";
     this.ctx.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.globalCompositeOperation = 'destination-over';
+    this.ctx.globalCompositeOperation = "destination-over";
     this.ctx.filter = `blur(${this.blurRadius}px)`;
     this.ctx.drawImage(frame, 0, 0, this.canvas.width, this.canvas.height);
     this.ctx.restore();
@@ -192,7 +209,9 @@ function maskToBitmap(
   videoWidth: number,
   videoHeight: number,
 ): Promise<ImageBitmap> {
-  const dataArray: Uint8ClampedArray = new Uint8ClampedArray(videoWidth * videoHeight * 4);
+  const dataArray: Uint8ClampedArray = new Uint8ClampedArray(
+    videoWidth * videoHeight * 4,
+  );
   const result = mask.getAsUint8Array();
   for (let i = 0; i < result.length; i += 1) {
     dataArray[i * 4] = result[i];

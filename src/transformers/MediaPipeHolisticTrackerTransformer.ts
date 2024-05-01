@@ -1,6 +1,6 @@
-import { Holistic, Options, Results } from '@mediapipe/holistic';
-import VideoTransformer from './VideoTransformer';
-import { VideoTransformerInitOptions } from './types';
+import { Holistic, type Options, type Results } from "@mediapipe/holistic";
+import VideoTransformer from "./VideoTransformer";
+import type { VideoTransformerInitOptions } from "./types";
 
 export type MediaPipeHolisticTrackerTransformerOptions = {
   holisticOptions?: Options;
@@ -16,7 +16,10 @@ export default class MediaPipeHolisticTrackerTransformer extends VideoTransforme
     return true;
   }
 
-  constructor({ holisticOptions, callback }: MediaPipeHolisticTrackerTransformerOptions) {
+  constructor({
+    holisticOptions,
+    callback,
+  }: MediaPipeHolisticTrackerTransformerOptions) {
     super();
     this.callback = callback || (() => null);
     this.holisticOptions = holisticOptions || {};
@@ -29,7 +32,8 @@ export default class MediaPipeHolisticTrackerTransformer extends VideoTransforme
     super.init({ outputCanvas, inputElement: inputVideo });
 
     this.holistic = new Holistic({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
     });
     this.holistic.setOptions(this.holisticOptions);
     this.holistic.onResults((r) => {
@@ -45,13 +49,15 @@ export default class MediaPipeHolisticTrackerTransformer extends VideoTransforme
     await this.holistic?.close();
   }
 
-  async update() {}
+  async update() { }
 
   async transform(): Promise<void> {
     return;
   }
 
-  async sendFramesContinuouslyForTracking(videoEl: HTMLVideoElement): Promise<void> {
+  async sendFramesContinuouslyForTracking(
+    videoEl: HTMLVideoElement,
+  ): Promise<void> {
     if (!this.isDisabled) {
       if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
         await this.holistic?.send({ image: videoEl });
