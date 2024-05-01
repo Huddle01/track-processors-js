@@ -1,50 +1,50 @@
 import ProcessorWrapper from "./ProcessorWrapper";
 import BackgroundTransformer, {
-  type BackgroundOptions,
-  type SegmenterOptions,
+	type BackgroundOptions,
+	type SegmenterOptions,
 } from "./transformers/BackgroundTransformer";
 
 export * from "./transformers/types";
 export { default as VideoTransformer } from "./transformers/VideoTransformer";
 export {
-  ProcessorWrapper,
-  type BackgroundOptions,
-  type SegmenterOptions,
-  BackgroundTransformer,
+	ProcessorWrapper,
+	type BackgroundOptions,
+	type SegmenterOptions,
+	BackgroundTransformer,
 };
 
 export const BackgroundBlur = (
-  blurRadius = 10,
-  segmenterOptions?: SegmenterOptions,
+	blurRadius = 10,
+	segmenterOptions?: SegmenterOptions,
 ) => {
-  return BackgroundProcessor(
-    { blurRadius, segmenterOptions },
-    "background-blur",
-  );
+	return BackgroundProcessor(
+		{ blurRadius, segmenterOptions },
+		"background-blur",
+	);
 };
 
 export const VirtualBackground = (
-  imagePath: string,
-  segmenterOptions?: SegmenterOptions,
+	imagePath: string,
+	segmenterOptions?: SegmenterOptions,
 ) => {
-  return BackgroundProcessor(
-    { imagePath, segmenterOptions },
-    "virtual-background",
-  );
+	return BackgroundProcessor(
+		{ imagePath, segmenterOptions },
+		"virtual-background",
+	);
 };
 
 export const BackgroundProcessor = (
-  options: BackgroundOptions,
-  name = "background-processor",
+	options: BackgroundOptions,
+	name = "background-processor",
 ) => {
-  const isProcessorSupported =
-    ProcessorWrapper.isSupported && BackgroundTransformer.isSupported;
-  if (!isProcessorSupported) {
-    throw new Error("processor is not supported in this browser");
-  }
-  const processor = new ProcessorWrapper(
-    new BackgroundTransformer(options),
-    name,
-  );
-  return processor;
+	const isProcessorSupported =
+		ProcessorWrapper.isSupported && BackgroundTransformer.isSupported;
+	if (!isProcessorSupported) {
+		throw new Error("processor is not supported in this browser");
+	}
+	const processor = new ProcessorWrapper(
+		new BackgroundTransformer(options),
+		name,
+	);
+	return processor;
 };
